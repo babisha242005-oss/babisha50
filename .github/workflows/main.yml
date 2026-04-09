@@ -1,0 +1,42 @@
+name: Build and Tag Docker Image
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger workflow on tags like v1.0.0
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Docker Buildx (for modern builds)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Step 3: Log in to DockerHub
+      - name: Log in to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Step 4: Extract version from the Git tag
+      - name: Set VERSION env
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      # Step 5: Build and tag Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t myusername/myapp:${{ env.VERSION }} .
+          docker push myusername/myapp:${{ env.VERSION }}
+
+      # Optional: Tag as 'latest' as well
+      - name: Tag latest
+        run: |
+          docker tag myusername/myapp:${{ env.VERSION }} myusername/myapp:latest
+          docker push myusername/myapp:latest
